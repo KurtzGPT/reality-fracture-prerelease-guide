@@ -12,6 +12,7 @@
 
 .content-shell{display:block}.sticky-preview{display:none}.preview-label{font-size:11px;letter-spacing:.18em;font-weight:850;color:#e9c18a}.sticky-preview h2{font-family:Georgia,serif;font-size:26px;margin:5px 0 6px}.preview-help{font-size:13px;color:#c9cbd6;line-height:1.4;margin:0 0 12px}.preview-image{display:block;width:100%;height:auto;max-height:calc(100vh - 205px);object-fit:contain;object-position:top;border-radius:10px;background:#101424}.preview-name{font-weight:800;font-size:14px;margin-top:10px;color:#f7e7cb}
 @media(min-width:700px) and (hover:hover){.content-shell{max-width:1560px;margin:auto;padding:0 22px;display:grid;grid-template-columns:clamp(315px,36vw,525px) minmax(0,1fr);gap:20px;align-items:start}.content-shell main.wrap{grid-column:2;grid-row:1;width:100%;max-width:none;margin:0;padding:0}.sticky-preview{grid-column:1;grid-row:1;display:block;position:sticky;top:74px;max-height:calc(100vh - 86px);overflow:auto;background:#1b2031;border:1px solid #ffffff33;border-radius:18px;padding:16px;box-shadow:0 18px 45px #0507147a}}@media(min-width:700px) and (max-width:1180px) and (hover:hover){.content-shell .pairs,.content-shell .tricks{grid-template-columns:1fr}.content-shell .photo-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media print{.sticky-preview{display:none}.content-shell{display:block}}
+@media(min-width:700px) and (hover:hover){.sticky-preview{cursor:grab;touch-action:none}.sticky-preview.is-dragging{cursor:grabbing;user-select:none}.sticky-preview.is-floating{position:fixed;left:var(--preview-left);top:var(--preview-top);width:clamp(315px,36vw,525px);max-width:calc(100vw - 16px);z-index:3}}
   </style>
 </head>
 <body>
@@ -209,7 +210,7 @@
   <aside class="sticky-preview" aria-label="Large card preview">
     <div class="preview-label">KEEP IN VIEW</div>
     <h2>Card preview</h2>
-    <p class="preview-help">Hover over a card picture to inspect it here. Click the picture for a full-size view.</p>
+    <p class="preview-help">Drag this preview to move it. Hover over a card picture to inspect it here. Click the picture for a full-size view.</p>
     <img class="preview-image" src="images/133.jpg" alt="Reality Fracture card: Fatehold Chronologist" width="488" height="680">
     <div class="preview-name">Fatehold Chronologist</div>
   </aside>
@@ -217,5 +218,45 @@
   <footer id="sources" class="wrap"><b>Sources checked September 24, 2026.</b><br>Card names and archetypes: <a href="https://magic.wizards.com/en/news/feature/reality-fracture-prerelease-guide">Wizards prerelease guide</a> Rules and card text: <a href="https://magic.wizards.com/en/news/feature/reality-fracture-release-notes">release notes</a> <a href="https://magic.wizards.com/en/news/feature/reality-fracture-mechanics">mechanics guide</a> <a href="https://magic.wizards.com/en/products/reality-fracture/card-image-gallery">official card gallery</a><br>This is an independent quick reference; check the printed card and event staff for final rulings.</footer>
   <dialog class="photo-dialog" aria-label="Enlarged card image"><form method="dialog"><button type="submit" aria-label="Close card image">Close ×</button></form><img alt=""></dialog>
   <script>const buttons=[...document.querySelectorAll('[data-color]')];const cards=[...document.querySelectorAll('[data-colors]')];buttons.forEach(button=>button.addEventListener('click',()=>{const selected=button.dataset.color;buttons.forEach(item=>item.setAttribute('aria-pressed',String(item===button)));cards.forEach(card=>{card.hidden=selected!=='all'&&!card.dataset.colors.includes(selected)})}));const photoDialog=document.querySelector('.photo-dialog');const enlarged=photoDialog.querySelector('img');const previewImage=document.querySelector('.preview-image');const previewName=document.querySelector('.preview-name');const showPreview=button=>{previewImage.src=button.dataset.photo;previewImage.alt='Reality Fracture card: '+button.dataset.name;previewName.textContent=button.dataset.name};document.querySelectorAll('[data-photo]').forEach(button=>{button.addEventListener('mouseenter',()=>showPreview(button));button.addEventListener('focus',()=>showPreview(button));button.addEventListener('click',()=>{showPreview(button);enlarged.src=button.dataset.photo;enlarged.alt='Reality Fracture card: '+button.dataset.name;photoDialog.showModal()})});photoDialog.addEventListener('click',event=>{if(event.target===photoDialog)photoDialog.close()});</script>
+  <script>
+    const previewPanel = document.querySelector('.sticky-preview');
+    let activePointer = null;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+    const placePreview = (left, top) => {
+      const maxLeft = Math.max(0, window.innerWidth - previewPanel.offsetWidth);
+      const maxTop = Math.max(0, window.innerHeight - previewPanel.offsetHeight);
+      previewPanel.style.setProperty('--preview-left', `${Math.max(0, Math.min(left, maxLeft))}px`);
+      previewPanel.style.setProperty('--preview-top', `${Math.max(0, Math.min(top, maxTop))}px`);
+    };
+    previewPanel.addEventListener('dragstart', event => event.preventDefault());
+    previewPanel.addEventListener('pointerdown', event => {
+      if (event.button !== 0 || !window.matchMedia('(min-width:700px) and (hover:hover)').matches) return;
+      const rect = previewPanel.getBoundingClientRect();
+      activePointer = event.pointerId;
+      dragOffsetX = event.clientX - rect.left;
+      dragOffsetY = event.clientY - rect.top;
+      previewPanel.classList.add('is-floating', 'is-dragging');
+      placePreview(rect.left, rect.top);
+      previewPanel.setPointerCapture(event.pointerId);
+      event.preventDefault();
+    });
+    previewPanel.addEventListener('pointermove', event => {
+      if (event.pointerId === activePointer) placePreview(event.clientX - dragOffsetX, event.clientY - dragOffsetY);
+    });
+    const finishDrag = event => {
+      if (event.pointerId !== activePointer) return;
+      activePointer = null;
+      previewPanel.classList.remove('is-dragging');
+      if (previewPanel.hasPointerCapture(event.pointerId)) previewPanel.releasePointerCapture(event.pointerId);
+    };
+    previewPanel.addEventListener('pointerup', finishDrag);
+    previewPanel.addEventListener('pointercancel', finishDrag);
+    window.addEventListener('resize', () => {
+      if (!previewPanel.classList.contains('is-floating')) return;
+      const rect = previewPanel.getBoundingClientRect();
+      placePreview(rect.left, rect.top);
+    });
+  </script>
 </body>
 </html>
