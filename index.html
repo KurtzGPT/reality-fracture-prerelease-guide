@@ -225,7 +225,7 @@
     let dragOffsetY = 0;
     const placePreview = (left, top) => {
       const maxLeft = Math.max(0, window.innerWidth - previewPanel.offsetWidth);
-      const maxTop = Math.max(0, window.innerHeight - previewPanel.offsetHeight);
+      const maxTop = Math.max(0, window.innerHeight - previewPanel.offsetHeight * 0.75);
       previewPanel.style.setProperty('--preview-left', `${Math.max(0, Math.min(left, maxLeft))}px`);
       previewPanel.style.setProperty('--preview-top', `${Math.max(0, Math.min(top, maxTop))}px`);
     };
